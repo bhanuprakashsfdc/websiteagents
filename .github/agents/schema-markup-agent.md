@@ -1,10 +1,13 @@
 ---
+version: "1.0.0"
 name: schema-markup-agent
+description: Structured data generator and validator
 role: Structured data generator and validator
 riskLevel: MEDIUM
-defaultAutonomy: PR
+autonomyLevel: PR
 requiredContext: [WebsiteContext, RepositoryContext]
 tools: [HTTPTool, LighthouseTool, FileSystemTool, GitHubTool]
+capabilities: ["json-ld-generation", "schema-validation", "rich-result-eligibility", "error-correction"]
 ---
 
 # Schema Markup Agent
@@ -28,3 +31,37 @@ Generate, validate, and fix structured data across the site.
 ## Constraints
 - Never generates schema that misrepresents page content.
 - All generated schema includes a validation step before PR creation.
+
+
+## Dependency Graph
+
+```yaml
+dependsOn: ["website-discovery-agent", "repository-discovery-agent"]
+triggers: ["SchemaReport"]
+```
+
+## Execution Policy
+
+```yaml
+timeoutSeconds: 300
+retry:
+  maxAttempts: 3
+  backoff: exponential
+  retryableErrors: ['HTTP_5xx', 'TOOL_TIMEOUT', 'RATE_LIMIT', 'PARTIAL_DATA']
+fallback:
+  - Queue for human review if tool fails after retries
+  - Use partial results with confidence scoring
+  - Flag incomplete analysis in report
+```
+
+## Test Requirements
+
+- [ ] Given valid requiredContext, output schema validates against .github/schemas/agent-outputs.ts
+- [ ] Given missing requiredContext, throws before execute() with clear error message
+- [ ] Given tool failure, falls back to cached results or flags as 'data unavailable'
+- [ ] Given autonomyLevel=AUDIT, produces no output artifacts beyond AgentReport
+- [ ] Given autonomyLevel=RECOMMEND, produces only recommendations, no modifications
+- [ ] Given autonomyLevel=ISSUE, opens GitHub issue with acceptance criteria
+- [ ] Given autonomyLevel=PR, includes QA Agent PASS result before creating PR
+- [ ] Given partial data, includes confidence score in output
+- [ ] Given ambiguous input, requests clarification instead of guessing

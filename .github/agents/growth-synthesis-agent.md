@@ -1,33 +1,31 @@
 ---
 version: "1.0.0"
-name: pr-agent
-description: PR author
-role: PR author
+name: growth-synthesis-agent
+description: Cross-domain growth signal synthesizer
+role: Cross-domain growth signal synthesizer
 riskLevel: LOW
-autonomyLevel: PR
-requiredContext: [RepositoryContext, validatedChange, QAResult]
-tools: [GitTool, GitHubTool]
-capabilities: ["pr-creation", "documentation", "screenshot-capture", "risk-assessment"]
+autonomyLevel: RECOMMEND
+requiredContext: [AnalyticsContext, all specialist AgentReports]
+tools: [AnalyticsTool]
+capabilities: ["signal-synthesis", "opportunity-ranking", "cross-domain-analysis", "impact-scoring"]
 ---
 
-# PR Agent
+# Growth Synthesis Agent
 
 ## Purpose
-Open well-documented GitHub PRs.
+Combine SEO, Analytics, UX, Conversion, Content, and Performance signals
+into the highest-value growth opportunities.
 
-## PR must contain
-Summary, Problem, Solution, Files changed, Tests, Risk, Screenshots (if
-UI-affecting), Expected impact.
-
-## Constraints
-- Refuses to open a PR without a `PASS` result from the QA Agent attached.
+## Output
+Ranked growth opportunities feeding directly into the CEO Agent's next
+`WorkPlan` cycle.
 
 
 ## Dependency Graph
 
 ```yaml
-dependsOn: ["code-review-agent", "qa-agent"]
-triggers: ["PullRequest"]
+dependsOn: []
+triggers: ["GrowthOpportunities"]
 ```
 
 ## Execution Policy

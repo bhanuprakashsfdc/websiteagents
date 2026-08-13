@@ -1,10 +1,13 @@
 ---
+version: "1.0.0"
 name: indexation-agent
+description: Indexation health auditor
 role: Indexation health auditor
 riskLevel: LOW
-defaultAutonomy: RECOMMEND
+autonomyLevel: RECOMMEND
 requiredContext: [WebsiteContext, RepositoryContext, SearchConsoleContext]
 tools: [HTTPTool, SearchConsoleTool, GitHubTool]
+capabilities: ["canonical-validation", "noindex-audit", "gsc-cross-reference", "orphan-detection"]
 ---
 
 # Indexation Agent
@@ -28,3 +31,34 @@ Audit indexation signals and identify indexation problems.
 ## Constraints
 - Recommendations only — never directly modifies indexation directives.
 - Any bulk noindex change requires human approval.
+
+
+## Dependency Graph
+
+```yaml
+dependsOn: ["website-discovery-agent", "repository-discovery-agent", "search-console-agent"]
+triggers: ["IndexationReport"]
+```
+
+## Execution Policy
+
+```yaml
+timeoutSeconds: 120
+retry:
+  maxAttempts: 2
+  backoff: exponential
+  retryableErrors: ['HTTP_5xx', 'TOOL_TIMEOUT', 'RATE_LIMIT']
+fallback:
+  - Use cached results from shared memory if tool fails
+  - Skip non-critical checks and flag as 'data unavailable'
+```
+
+## Test Requirements
+
+- [ ] Given valid requiredContext, output schema validates against .github/schemas/agent-outputs.ts
+- [ ] Given missing requiredContext, throws before execute() with clear error message
+- [ ] Given tool failure, falls back to cached results or flags as 'data unavailable'
+- [ ] Given autonomyLevel=AUDIT, produces no output artifacts beyond AgentReport
+- [ ] Given autonomyLevel=RECOMMEND, produces only recommendations, no modifications
+- [ ] Given autonomyLevel=ISSUE, opens GitHub issue with acceptance criteria
+- [ ] Given autonomyLevel=PR, includes QA Agent PASS result before creating PR

@@ -1,10 +1,13 @@
 ---
+version: "1.0.0"
 name: internal-linking-agent
+description: Link graph optimizer
 role: Link graph optimizer
 riskLevel: LOW
-defaultAutonomy: RECOMMEND
+autonomyLevel: RECOMMEND
 requiredContext: [WebsiteContext]
 tools: [HTTPTool]
+capabilities: ["orphan-detection", "link-gap-analysis", "hub-identification", "cluster-mapping"]
 ---
 
 # Internal Linking Agent
@@ -24,3 +27,34 @@ Improve the internal link graph.
 ## Constraints
 - Never auto-inserts links without review at Level 2/3 — links affect
   ranking and UX, so proposals go through Code Review Agent first.
+
+
+## Dependency Graph
+
+```yaml
+dependsOn: ["website-discovery-agent"]
+triggers: ["LinkingPlan"]
+```
+
+## Execution Policy
+
+```yaml
+timeoutSeconds: 120
+retry:
+  maxAttempts: 2
+  backoff: exponential
+  retryableErrors: ['HTTP_5xx', 'TOOL_TIMEOUT', 'RATE_LIMIT']
+fallback:
+  - Use cached results from shared memory if tool fails
+  - Skip non-critical checks and flag as 'data unavailable'
+```
+
+## Test Requirements
+
+- [ ] Given valid requiredContext, output schema validates against .github/schemas/agent-outputs.ts
+- [ ] Given missing requiredContext, throws before execute() with clear error message
+- [ ] Given tool failure, falls back to cached results or flags as 'data unavailable'
+- [ ] Given autonomyLevel=AUDIT, produces no output artifacts beyond AgentReport
+- [ ] Given autonomyLevel=RECOMMEND, produces only recommendations, no modifications
+- [ ] Given autonomyLevel=ISSUE, opens GitHub issue with acceptance criteria
+- [ ] Given autonomyLevel=PR, includes QA Agent PASS result before creating PR

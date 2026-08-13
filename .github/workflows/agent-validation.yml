@@ -1,0 +1,48 @@
+name: Validate Agent Manifests
+
+on:
+  push:
+    paths:
+      - '.github/agents/**'
+      - '.github/schemas/**'
+      - '.github/scripts/validate-agents.py'
+  pull_request:
+    paths:
+      - '.github/agents/**'
+      - '.github/schemas/**'
+      - '.github/scripts/validate-agents.py'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate agent manifests
+        run: python3 .github/scripts/validate-agents.py
+      - name: Check no duplicate frontmatter keys
+        run: |
+          for f in .github/agents/*.md; do
+            if grep -qE '^(name|version|description|role|riskLevel|autonomyLevel|requiredContext|tools|capabilities):.*\1:' "$f" 2>/dev/null; then
+              echo "DUPLICATE_KEY in $f"
+              exit 1
+            fi
+          done
+      - name: Verify all agents have blocks
+        run: |
+          for f in .github/agents/*.md; do
+            if ! grep -q '## Dependency Graph' "$f"; then
+              echo "MISSING_DEPENDENCY_GRAPH in $f"
+              exit 1
+            fi
+            if ! grep -q '## Execution Policy' "$f"; then
+              echo "MISSING_EXECUTION_POLICY in $f"
+              exit 1
+            fi
+            if ! grep -q '## Test Requirements' "$f"; then
+              echo "MISSING_TEST_REQUIREMENTS in $f"
+              exit 1
+            fi
+          done
